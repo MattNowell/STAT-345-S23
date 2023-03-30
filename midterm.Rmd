@@ -1,0 +1,157 @@
+---
+title: "STAT 345 Midterm Project"
+font: 12pt
+date: "Due March 31"
+author: "Matt Nowell"
+output: word_document
+---
+
+
+
+```
+library(devtools)
+devtools::install_github("abresler/nbastatR")
+```
+```{r message=FALSE, warning=FALSE,results='hide'}
+library(devtools)
+library(tidyverse)
+library(dplyr)
+library(nbastatR)
+library(ggplot2)
+library(ggrepel)
+library(ggthemes)
+library(gganimate)
+Sys.setenv("VROOM_CONNECTION_SIZE"=131072*2)
+```
+```{r fig.height=20, fig.width=15}
+#Creating the individual shot tables for each season
+shots2015<-as_tibble(teams_shots(teams = "Milwaukee Bucks", seasons = 2015))
+shots2016<-as_tibble(teams_shots(teams = "Milwaukee Bucks", seasons = 2016))
+shots2017<-as_tibble(teams_shots(teams = "Milwaukee Bucks", seasons = 2017))
+shots2018<-as_tibble(teams_shots(teams = "Milwaukee Bucks", seasons = 2018))
+#Combining these shot tables into one using rbind
+shots1518<-rbind(shots2015,shots2016,shots2017,shots2018)
+
+#Got the Bucks colors and saved them for use in our plot
+buckscolors<-c("#eee1c6","#00471b")
+
+#Created the plot mapping missed shots to the tan color and made shots to the green. I used facet to separate the seasons. I also scaled the graph to feet by finding the dimensions online. I then realized the coordinates are in feet*10 so I just divided by ten to map them on the plot. I used opacity with alpha = .05 to help visualize the overlapping points. 
+shots1518 %>% 
+  ggplot() + 
+  geom_point(mapping=aes(x=locationX/10, y=locationY/10, color=isShotMade, alpha=0.05)) + 
+  xlab("X-Coordinate (ft)") + 
+  ylab("Y-Coordinate (ft)") + 
+  scale_color_manual(name = "Shots", values = buckscolors ) + 
+  theme_dark() + 
+  ggtitle("Milwaukee Bucks Shot Position by Year")+ 
+  facet_wrap( ~ yearSeason,ncol=2) + 
+  guides(alpha="none")
+```
+```{r}
+#I used the game_logs data set to incorporate actual shot success as a percentage to enhance understanding the figure above and present a more concrete example of shot success and its impact on the outcome of the game.
+games<-game_logs(seasons = 2015:2018,league = "NBA",result_types = "team",season_types = "Regular Season")
+#Here I seperated the bucks from the rest and specified the variables I would use for my figure.
+bucksgames <- games %>% select(yearSeason, nameTeam, outcomeGame, pctFGTeam) %>% filter( nameTeam == "Milwaukee Bucks")
+#Here I create the figure using ggplot and the boxplot geom. I apply the colors I declared earlier
+bucksgames %>%
+  ggplot() +
+  geom_boxplot(mapping=aes(x=factor(yearSeason), y=pctFGTeam*100, fill=outcomeGame)) + 
+  xlab("Year") + 
+  ylab("Shot success (Percentage)") + 
+  scale_fill_manual(name = "Win or Loss", values = buckscolors, labels = c("Loss","Win") ) + 
+  ggtitle("Milwaukee Bucks Shot Success By Game Outcome 2015-2018")
+```    
+   
+
+   
+# Shot Analysis Report 2015-2018
+Notable features of 2015 shots:
+
+- High right side three point shot success rate 
+- High left side two point shot success rate 
+
+Notable features of 2016 shots:
+
+- Greater lay-up and dunk success rate
+- Greater left side three point success rate
+- Greater left side two point success rate
+- Lower right side three point success rate compared to 2015
+
+Notable features of 2017 shots:
+
+- Greater number of three point shot attempts
+- Similar lay-up and dunk success rate compared to 2016
+- Less two point shot attempts compared to 2016
+
+Notable features of 2018 shots:
+
+- Greater two point shot success rate
+- Even greater lay-up and dunk success rate
+- Similar number of three point shot attempts
+- Similar right side three point shot success rate
+- Significant absence in three point shots on the left side
+
+```{r echo=FALSE, fig.height=20, fig.width=15, message=FALSE, warning=FALSE,results='hide'}
+shots2015<-as_tibble(teams_shots(teams = "Milwaukee Bucks", seasons = 2015))
+shots2016<-as_tibble(teams_shots(teams = "Milwaukee Bucks", seasons = 2016))
+shots2017<-as_tibble(teams_shots(teams = "Milwaukee Bucks", seasons = 2017))
+shots2018<-as_tibble(teams_shots(teams = "Milwaukee Bucks", seasons = 2018))
+shots1518<-rbind(shots2015,shots2016,shots2017,shots2018)
+buckscolors<-c("#eee1c6","#00471b")
+shots1518 %>% 
+  ggplot() + 
+  geom_point(mapping=aes(x=locationX/10, y=locationY/10, color=isShotMade, alpha=0.05)) + 
+  xlab("X-Coordinate (ft)") + 
+  ylab("Y-Coordinate (ft)") + 
+  scale_color_manual(name = "Shots", values = buckscolors ) + 
+  theme_dark() + 
+  ggtitle("Milwaukee Bucks Shot Position by Year")+ 
+  facet_wrap( ~ yearSeason,ncol=2) + 
+  guides(alpha="none")
+```
+
+## Further Reading
+Notable features of 2015 shots:
+
+- High right side three point shot success rate. Specific areas of interest are the back corner and the top right clustered around x = 15ft and y = 20ft 
+- High left side two point shot success rate. Specific areas of interest include shots clustered around x = -15ft and y = 0ft.
+
+Notable features of 2016 shots:
+
+- Greater lay-up and dunk success rate. The clustering of darker greens near the hoop signifies this greater shot success.
+- Greater left side three point success rate. The left side three point zone compared to the 2015 data has seen an increase in shot attempts overall but also successes.
+- Greater left side two point success rate. This side has a more even shot spread compared to 2015 with an overall increase in shot success.
+- Lower right side three point success rate compared to 2015. Not only were attempted shots lower in this zone but the success rate seems to have dipped considerably. This is especially apparent in the corner.
+
+Notable features of 2017 shots:
+
+- Greater number of three point shot attempts. The density of shots along the three point line is considerably higher including successful shots.
+- Similar lay-up and dunk success rate compared to 2016. These rates seemed to have stay relatively consistent compared to the previous season.
+- Less two point shot attempts compared to 2016. Overall two point shot attempts and successes were considerably lower in comparison to both 2015 and 2016.
+
+Notable features of 2018 shots:
+
+- Greater two point shot success rate. The density of shots in the two point range has jumped considerably from 2017. Notably the spread seems to be much more even and shots near x = 0ft and y = 7.5 have increased substantially.
+- Even greater lay-up and dunk success rate. There is a significant jump in shot success density near the hoop compared to 2017
+- Similar number of three point shot attempts compared to 2017. With a slight dip in attempts along the left side.
+- Similar right side three point success. Compared to the previous season right side three point success was similar with a slight decrease in corner shots.
+- Significant absence in three point shots on the left side. There is a very noticeable gap along the three point line near y = 8.
+  
+    
+## Extra Visualization
+  
+  I have decided to include another visual to incorporate shot success as a percentage to enhance understanding the previous figure and present a more concrete example of shot success and its impact on the outcome of the game.
+  
+  As demonstrated by the figure below shot success has a major impact on game outcome. The winning games are distinctly accompanied by a higher successful shot percentage. You can also observe a gradual increase in shot success in winning games from 2015 to 2018. In the losing games however there are other factors at play. This is shown especially in 2015 and 2016. These seasons have a higher successful shot percentage in losing games then in 2017 and 2018. I believe this demonstrates that other fundamentals of the game are to blame for this seeming contradiction. In later seasons I believe fundamentals were strengthened along with shot success to create the larger gap we see between the losing games and winning games in 2017 and 2018.
+   
+```{r echo=FALSE, message=FALSE, warning=FALSE,results='hide'}
+games<-game_logs(seasons = 2015:2018,league = "NBA",result_types = "team",season_types = "Regular Season")
+bucksgames <- games %>% select(yearSeason, nameTeam, outcomeGame, pctFGTeam) %>% filter( nameTeam == "Milwaukee Bucks")
+bucksgames %>%
+  ggplot() +
+  geom_boxplot(mapping=aes(x=factor(yearSeason), y=pctFGTeam*100, fill=outcomeGame)) + 
+  xlab("Year") + 
+  ylab("Shot success (Percentage)") + 
+  scale_fill_manual(name = "Win or Loss", values = buckscolors, labels = c("Loss","Win") ) + 
+  ggtitle("Milwaukee Bucks Shot Success By Game Outcome 2015-2018")
+```   
